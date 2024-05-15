@@ -13,7 +13,7 @@ func Find(collection string, documents any) error {
 	defer client.Disconnect(ctx)
 
 	c := client.Database(DBNAME).Collection(collection)
-	cursor, err := c.Find(ctx, nil)
+	cursor, err := c.Find(ctx, bson.M{})
 	if err != nil {
 		return err
 	}
