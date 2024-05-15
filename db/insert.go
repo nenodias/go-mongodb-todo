@@ -1,11 +1,20 @@
 package db
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+	"log"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 func Insert(collection string, data any) (primitive.ObjectID, error) {
 	// Get the MongoDB connection
 	client, ctx := GetConnection()
-	defer client.Disconnect(ctx)
+	defer func() {
+		err := client.Disconnect(ctx)
+		if err != nil {
+			log.Println(err)
+		}
+	}()
 
 	c := client.Database(DBNAME).Collection(collection)
 	result, err := c.InsertOne(ctx, data)

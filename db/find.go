@@ -10,7 +10,12 @@ import (
 
 func Find(collection string, documents any) error {
 	client, ctx := GetConnection()
-	defer client.Disconnect(ctx)
+	defer func() {
+		err := client.Disconnect(ctx)
+		if err != nil {
+			log.Println(err)
+		}
+	}()
 
 	c := client.Database(DBNAME).Collection(collection)
 	cursor, err := c.Find(ctx, bson.M{})
@@ -28,7 +33,12 @@ func Find(collection string, documents any) error {
 
 func FindByID(collection string, id string, document any) error {
 	client, ctx := GetConnection()
-	defer client.Disconnect(ctx)
+	defer func() {
+		err := client.Disconnect(ctx)
+		if err != nil {
+			log.Println(err)
+		}
+	}()
 
 	c := client.Database(DBNAME).Collection(collection)
 

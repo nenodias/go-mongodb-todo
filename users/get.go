@@ -15,8 +15,8 @@ func getAll(c fiber.Ctx) error {
 }
 
 func getById(c fiber.Ctx) error {
-	user := User{}
-	err := db.FindByID("users", c.Params("id"), &user)
+	user := new(User)
+	err := db.FindByID("users", c.Params("id"), user)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
