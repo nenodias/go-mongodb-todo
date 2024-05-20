@@ -8,7 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func Find(collection string, documents any) error {
+func Find(collection string, filter bson.M, documents any) error {
 	client, ctx := GetConnection()
 	defer func() {
 		err := client.Disconnect(ctx)
@@ -18,7 +18,10 @@ func Find(collection string, documents any) error {
 	}()
 
 	c := client.Database(DBNAME).Collection(collection)
-	cursor, err := c.Find(ctx, bson.M{})
+	if filter == nil {
+		filter = bson.M{}
+	}
+	cursor, err := c.Find(ctx, filter)
 	if err != nil {
 		return err
 	}

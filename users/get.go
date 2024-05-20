@@ -7,7 +7,7 @@ import (
 
 func getAll(c fiber.Ctx) error {
 	users := []User{}
-	err := db.Find(COLLECTION, &users)
+	err := db.Find(COLLECTION, nil, &users)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
