@@ -1,4 +1,4 @@
-package users
+package tasks
 
 import (
 	"github.com/gofiber/fiber/v3"
@@ -6,16 +6,16 @@ import (
 )
 
 func getAll(c fiber.Ctx) error {
-	users := []User{}
-	err := db.Find(COLLECTION, &users)
+	tasks := []Task{}
+	err := db.Find(COLLECTION, &tasks)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
-	return c.JSON(users)
+	return c.JSON(tasks)
 }
 
 func getById(c fiber.Ctx) error {
-	user := new(User)
+	user := new(Task)
 	err := db.FindByID(COLLECTION, c.Params("id"), user)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})

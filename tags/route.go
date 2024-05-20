@@ -1,9 +1,9 @@
-package users
+package tags
 
 import "github.com/gofiber/fiber/v3"
 
 func SetRoutes(r fiber.Router) {
-	users := r.Group("/users")
+	users := r.Group("/tags")
 	users.Post("/", addItem)
 	users.Get("/", getAll)
 	users.Get("/:id", getById)

@@ -1,4 +1,4 @@
-package users
+package tags
 
 import (
 	"github.com/gofiber/fiber/v3"
@@ -6,8 +6,8 @@ import (
 )
 
 func updateById(c fiber.Ctx) error {
-	body := new(User)
-	result := User{}
+	body := new(Tag)
+	result := Tag{}
 	if err := c.Bind().Body(body); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}

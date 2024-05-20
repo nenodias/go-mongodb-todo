@@ -5,12 +5,12 @@ import (
 	"github.com/nenodias/go-mongodb-todo/db"
 )
 
-func addUser(c fiber.Ctx) error {
+func addItem(c fiber.Ctx) error {
 	body := new(User)
 	if err := c.Bind().Body(body); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	id, err := db.Insert("users", body)
+	id, err := db.Insert(COLLECTION, body)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}

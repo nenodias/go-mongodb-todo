@@ -1,4 +1,4 @@
-package users
+package tags
 
 import (
 	"net/http"
