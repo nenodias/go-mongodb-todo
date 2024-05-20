@@ -2,7 +2,7 @@ package db
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -30,8 +30,8 @@ func UpdateByID(collection string, id string, data, result any) error {
 	if err != nil {
 		return err
 	}
-	if update.MatchedCount == 0 {
-		return errors.New("no document found with the given ID")
+	if update.ModifiedCount != 1 {
+		return fmt.Errorf("%d documents updated with the given ID: %s", update.ModifiedCount, id)
 	}
 	err = FindByID(collection, id, result)
 	if err != nil {
