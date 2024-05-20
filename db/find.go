@@ -50,3 +50,16 @@ func FindByID(collection string, id string, document any) error {
 	filter := bson.M{"_id": objectID}
 	return c.FindOne(context.Background(), filter).Decode(document)
 }
+
+func FindOne(collection string, filter bson.M, document any) error {
+	client, ctx := GetConnection()
+	defer func() {
+		err := client.Disconnect(ctx)
+		if err != nil {
+			log.Println(err)
+		}
+	}()
+
+	c := client.Database(DBNAME).Collection(collection)
+	return c.FindOne(context.Background(), filter).Decode(document)
+}
