@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  mongo1:
+    image: mongo:7.0
+    network_mode: bridge
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+    ports:
+      - 27017:27017
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'host.docker.internal:27017'}]}) }" | mongosh --port 27017 --quiet
+      interval: 5s
+      timeout: 30s
+      start_period: 0s
+      start_interval: 1s
+      retries: 30
+    volumes:
+      - "mongo1_data:/data/db"
+      - "mongo1_config:/data/configdb"
+  
+  mongo-express:
+    image: mongo-express:latest
+    network_mode: bridge
+    ports:
+      - 8081:8081
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      ME_CONFIG_BASICAUTH_USERNAME: root
+      ME_CONFIG_BASICAUTH_PASSWORD: example
+      ME_CONFIG_MONGODB_ENABLE_ADMIN: true
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      ME_CONFIG_MONGODB_URL: mongodb://mongo1:27017/?replicaSet=rs0
+    depends_on:
+      - mongo1
+    links:
+      - mongo1
+
+volumes:
+  mongo1_data:
+  mongo1_config:

@@ -12,7 +12,7 @@ import (
 
 const (
 	DBNAME               = "todos"
-	DEFAULT_DATABASE_URI = "mongodb://root:example@localhost:27017/?authSource=admin&retryWrites=true&w=majority&appName=monguinho"
+	DEFAULT_DATABASE_URI = "mongodb://127.0.0.1:27017/?replicaSet=rs0"
 )
 
 func GetConnection() (client *mongo.Client, ctx context.Context) {
