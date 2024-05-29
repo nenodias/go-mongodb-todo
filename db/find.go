@@ -6,18 +6,11 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func Find(collection string, filter bson.M, documents any) error {
-	client, ctx := GetConnection()
-	defer func() {
-		err := client.Disconnect(ctx)
-		if err != nil {
-			log.Println(err)
-		}
-	}()
-
-	c := client.Database(DBNAME).Collection(collection)
+func Find(ctx mongo.SessionContext, collection string, filter bson.M, documents any) error {
+	c := ctx.Client().Database(DBNAME).Collection(collection)
 	if filter == nil {
 		filter = bson.M{}
 	}
@@ -26,7 +19,7 @@ func Find(collection string, filter bson.M, documents any) error {
 		return err
 	}
 	defer func() {
-		err := cursor.Close(context.Background())
+		err := cursor.Close(ctx)
 		if err != nil {
 			log.Println(err)
 		}
@@ -34,16 +27,9 @@ func Find(collection string, filter bson.M, documents any) error {
 	return cursor.All(ctx, documents)
 }
 
-func FindByID(collection string, id string, document any) error {
-	client, ctx := GetConnection()
-	defer func() {
-		err := client.Disconnect(ctx)
-		if err != nil {
-			log.Println(err)
-		}
-	}()
+func FindByID(ctx mongo.SessionContext, collection string, id string, document any) error {
 
-	c := client.Database(DBNAME).Collection(collection)
+	c := ctx.Client().Database(DBNAME).Collection(collection)
 
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -51,18 +37,10 @@ func FindByID(collection string, id string, document any) error {
 	}
 
 	filter := bson.M{"_id": objectID}
-	return c.FindOne(context.Background(), filter).Decode(document)
+	return c.FindOne(ctx, filter).Decode(document)
 }
 
-func FindOne(collection string, filter bson.M, document any) error {
-	client, ctx := GetConnection()
-	defer func() {
-		err := client.Disconnect(ctx)
-		if err != nil {
-			log.Println(err)
-		}
-	}()
-
-	c := client.Database(DBNAME).Collection(collection)
+func FindOne(ctx mongo.SessionContext, collection string, filter bson.M, document any) error {
+	c := ctx.Client().Database(DBNAME).Collection(collection)
 	return c.FindOne(context.Background(), filter).Decode(document)
 }

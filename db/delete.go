@@ -2,26 +2,19 @@ package db
 
 import (
 	"fmt"
-	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func DeleteById(collection, id string) error {
-	client, ctx := GetConnection()
-	defer func() {
-		err := client.Disconnect(ctx)
-		if err != nil {
-			log.Println(err)
-		}
-	}()
+func DeleteById(ctx mongo.SessionContext, collection, id string) error {
 	primitiveID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return err
 	}
-	c := client.Database(DBNAME).Collection(collection)
+	c := ctx.Client().Database(DBNAME).Collection(collection)
 	result, err := c.DeleteOne(ctx, bson.M{"_id": primitiveID}, options.Delete())
 	if err != nil {
 		return err

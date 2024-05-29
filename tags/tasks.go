@@ -8,9 +8,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func findOrCreate(name string) (tag Tag, err error) {
+func findOrCreate(ctx mongo.SessionContext, name string) (tag Tag, err error) {
 	filter := bson.M{"name": name}
-	err = db.FindOne(COLLECTION, filter, &tag)
+	err = db.FindOne(ctx, COLLECTION, filter, &tag)
 	if err != nil && err != mongo.ErrNoDocuments {
 		return
 	}
@@ -19,7 +19,7 @@ func findOrCreate(name string) (tag Tag, err error) {
 	}
 
 	tag.Name = name
-	id, err := db.Insert(COLLECTION, tag)
+	id, err := db.Insert(ctx, COLLECTION, tag)
 	if err != nil {
 		return
 	}
@@ -28,9 +28,9 @@ func findOrCreate(name string) (tag Tag, err error) {
 	return tag, nil
 }
 
-func AddTask(taskID string, names []string) error {
+func AddTask(ctx mongo.SessionContext, taskID string, names []string) error {
 	for _, name := range names {
-		tag, err := findOrCreate(name)
+		tag, err := findOrCreate(ctx, name)
 		if err != nil {
 			return err
 		}
@@ -41,7 +41,7 @@ func AddTask(taskID string, names []string) error {
 		tag.Tasks = append(tag.Tasks, taskID)
 		sort.Strings(tag.Tasks)
 		result := new(Tag)
-		err = db.UpdateByID(COLLECTION, tag.ID.Hex(), tag, result)
+		err = db.UpdateByID(ctx, COLLECTION, tag.ID.Hex(), tag, result)
 		if err != nil {
 			return err
 		}
@@ -49,13 +49,13 @@ func AddTask(taskID string, names []string) error {
 	return nil
 }
 
-func RemoveTask(taskID string, names ...string) error {
+func RemoveTask(ctx mongo.SessionContext, taskID string, names ...string) error {
 	filter := bson.M{"tasks": taskID}
 	if len(names) > 0 {
 		filter["name"] = bson.M{"$in": names}
 	}
 	var documents []Tag
-	err := db.Find(COLLECTION, filter, &documents)
+	err := db.Find(ctx, COLLECTION, filter, &documents)
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func RemoveTask(taskID string, names ...string) error {
 	for _, document := range documents {
 		i := sort.SearchStrings(document.Tasks, taskID)
 		document.Tasks = append(document.Tasks[:i], document.Tasks[i+1:]...)
-		err = db.UpdateByID(COLLECTION, document.ID.Hex(), document, &result)
+		err = db.UpdateByID(ctx, COLLECTION, document.ID.Hex(), document, &result)
 		if err != nil {
 			return err
 		}

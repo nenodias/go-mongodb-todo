@@ -12,7 +12,7 @@ import (
 
 const (
 	DBNAME               = "todos"
-	DEFAULT_DATABASE_URI = "mongodb://root:example@localhost:27017/?authSource=admin"
+	DEFAULT_DATABASE_URI = "mongodb://root:example@localhost:27017/?authSource=admin&retryWrites=true&w=majority&appName=monguinho"
 )
 
 func GetConnection() (client *mongo.Client, ctx context.Context) {
@@ -26,4 +26,26 @@ func GetConnection() (client *mongo.Client, ctx context.Context) {
 		log.Fatal(err)
 	}
 	return
+}
+
+func DoConnection(ctx context.Context, fn func(ctx mongo.SessionContext) error) error {
+	client, ctx := GetConnection()
+	defer func() {
+		err := client.Disconnect(ctx)
+		if err != nil {
+			log.Println(err)
+		}
+	}()
+	return client.UseSession(ctx, func(sctx mongo.SessionContext) error {
+		err := sctx.StartTransaction()
+		if err != nil {
+			return err
+		}
+		err = fn(sctx)
+		if err != nil {
+			sctx.AbortTransaction(sctx)
+			return err
+		}
+		return sctx.CommitTransaction(sctx)
+	})
 }

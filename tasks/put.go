@@ -1,9 +1,12 @@
 package tasks
 
 import (
+	"context"
+
 	"github.com/gofiber/fiber/v3"
 	"github.com/nenodias/go-mongodb-todo/db"
 	"github.com/nenodias/go-mongodb-todo/tags"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func updateById(c fiber.Ctx) error {
@@ -13,44 +16,28 @@ func updateById(c fiber.Ctx) error {
 	}
 
 	var prevTask Task
-	err := db.FindByID(COLLECTION, c.Params("id"), &prevTask)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
-
 	result := Task{}
-	err = db.UpdateByID(COLLECTION, c.Params("id"), body, &result)
+	err := db.DoConnection(context.Background(), func(ctx mongo.SessionContext) error {
+		err := db.FindByID(ctx, COLLECTION, c.Params("id"), &prevTask)
+		if err != nil {
+			return err
+		}
+
+		err = db.UpdateByID(ctx, COLLECTION, c.Params("id"), body, &result)
+		if err != nil {
+			return err
+		}
+
+		return updateTagsTask(ctx, c.Params("id"), prevTask.Tags, result.Tags)
+	})
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
-
-	err = updateTagsTask(c.Params("id"), prevTask.Tags, result.Tags)
-	if err != nil {
-		err := tags.RemoveTask(c.Params("id"), result.Tags...)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-		}
-
-		err = db.DeleteById(COLLECTION, c.Params("id"))
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-		}
-		_, err = db.Insert(COLLECTION, &result)
-		if err != nil {
-			db.DeleteById(COLLECTION, c.Params("id"))
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-		}
-		err = tags.AddTask(result.ID.Hex(), result.Tags)
-		if err != nil {
-			db.DeleteById(COLLECTION, c.Params("id"))
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-		}
 	}
 
 	return c.JSON(result)
 }
 
-func updateTagsTask(id string, oldTags, newTags []string) error {
+func updateTagsTask(ctx mongo.SessionContext, id string, oldTags, newTags []string) error {
 	mapOldTags := make(map[string]int, len(oldTags))
 	for k, v := range oldTags {
 		mapOldTags[string(v)] = k
@@ -64,7 +51,7 @@ func updateTagsTask(id string, oldTags, newTags []string) error {
 		}
 	}
 	if len(diffTags) > 0 {
-		err := tags.AddTask(id, diffTags)
+		err := tags.AddTask(ctx, id, diffTags)
 		if err != nil {
 			return err
 		}
@@ -74,7 +61,7 @@ func updateTagsTask(id string, oldTags, newTags []string) error {
 		for k := range mapOldTags {
 			deleteTags = append(deleteTags, k)
 		}
-		err := tags.RemoveTask(id, deleteTags...)
+		err := tags.RemoveTask(ctx, id, deleteTags...)
 		if err != nil {
 			return err
 		}

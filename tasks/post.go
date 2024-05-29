@@ -1,11 +1,12 @@
 package tasks
 
 import (
-	"log"
+	"context"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/nenodias/go-mongodb-todo/db"
 	"github.com/nenodias/go-mongodb-todo/tags"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func addItem(c fiber.Ctx) error {
@@ -13,18 +14,20 @@ func addItem(c fiber.Ctx) error {
 	if err := c.Bind().Body(body); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	id, err := db.Insert(COLLECTION, body)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
-	body.ID = id
-
-	err = tags.AddTask(body.ID.Hex(), body.Tags)
-	if err != nil {
-		deleteErr := db.DeleteById(COLLECTION, body.ID.Hex())
-		if deleteErr != nil {
-			log.Println(err)
+	err := db.DoConnection(context.Background(), func(ctx mongo.SessionContext) error {
+		id, err := db.Insert(ctx, COLLECTION, body)
+		if err != nil {
+			return err
 		}
+		body.ID = id
+		err = tags.AddTask(ctx, body.ID.Hex(), body.Tags)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 

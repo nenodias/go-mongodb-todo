@@ -1,30 +1,22 @@
 package db
 
 import (
-	"context"
 	"fmt"
-	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func UpdateByID(collection string, id string, data, result any) error {
-	client, ctx := GetConnection()
-	defer func() {
-		err := client.Disconnect(ctx)
-		if err != nil {
-			log.Println(err)
-		}
-	}()
+func UpdateByID(ctx mongo.SessionContext, collection string, id string, data, result any) error {
 	primitiveID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return err
 	}
-	c := client.Database(DBNAME).Collection(collection)
+	c := ctx.Client().Database(DBNAME).Collection(collection)
 	opts := options.Update().SetUpsert(false)
-	update, err := c.UpdateByID(context.Background(), primitiveID, bson.M{
+	update, err := c.UpdateByID(ctx, primitiveID, bson.M{
 		"$set": data,
 	}, opts)
 	if err != nil {
@@ -33,7 +25,7 @@ func UpdateByID(collection string, id string, data, result any) error {
 	if update.ModifiedCount != 1 {
 		return fmt.Errorf("%d documents updated with the given ID: %s", update.ModifiedCount, id)
 	}
-	err = FindByID(collection, id, result)
+	err = FindByID(ctx, collection, id, result)
 	if err != nil {
 		return err
 	}
